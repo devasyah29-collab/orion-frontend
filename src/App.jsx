@@ -260,7 +260,7 @@ const SceneCard = ({ scene, globalIdentity, config, handleDownloadImage, uploade
     setIsRegenerating(true);
     
     try {
-      const imageUrlEndpoint = "https://orion-backend-flame.vercel.app";
+      const imageUrlEndpoint = "https://orion-backend-flame.vercel.app/api/gemini";
       const activeStyleDirective = getStyleDirective(config.style);
       
       let strictImagePrompt = `INSTRUKSI KRITIS: Buat gambar fotorealistis yang dengan KETAT mematuhi identitas global permanen ini untuk memastikan kontinuitas yang sempurna antar frame video:
@@ -598,7 +598,7 @@ const App = () => {
     setProductName('');
     try {
       const base64Data = newUploads.productBase64;
-      const url = "https://orion-backend-flame.vercel.app";
+      const url = "https://orion-backend-flame.vercel.app/api/gemini";
 
       const response = await fetchWithRetry(url, {
         method: 'POST',
@@ -658,7 +658,7 @@ const App = () => {
     setTimeout(async () => {
       try {
         setGenerationStatus('Analisis Motion Layer & Micro-Attributes...');
-        const textUrl = "https://orion-backend-flame.vercel.app";
+        const textUrl = "https://orion-backend-flame.vercel.app/api/gemini";
         
         // Environment Mapping
         const environmentDirectives = {
