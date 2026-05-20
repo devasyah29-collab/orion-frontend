@@ -49,7 +49,7 @@ const NO_TEXT_POLICY = "No Overlay Text Policy: no text, no subtitle, no waterma
 
 const getBackgroundMotionDirective = (env, mode, style) => {
   if (mode === 'model-only' && style !== 'Vlog Style') {
-    return "[STATIC ENVIRONMENT LOCK] Background statis sempurna, stabil, dan konsisten penuh di seluruh scene. TIDAK ADA pergerakan tambahan.";
+    return "[STATIC ENVIRONMENT LOCK] Background statis sempurna, stabil, and konsisten penuh di seluruh scene. TIDAK ADA pergerakan tambahan.";
   }
 
   let baseMotion = "";
@@ -320,7 +320,7 @@ const SceneCard = ({ scene, globalIdentity, config, handleDownloadImage, uploade
       Aksesoris: ${globalIdentity.modelDetails?.accessories}
       Fokus Komposisi: ${config.composition}\n`;
       } else {
-        strictImagePrompt += `\nFokus Komposisi: Produk Utama (Product Focus)\n`;
+        strictImagePrompt += `\nFokus Komposini: Produk Utama (Product Focus)\n`;
       }
       
       if (selectedMode === 'model-only') {
@@ -404,6 +404,13 @@ const SceneCard = ({ scene, globalIdentity, config, handleDownloadImage, uploade
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
       const imgData = await imgRes.json();
+      
+      if (imgData.error) {
+        setCardError(`API Error: ${imgData.error.message || 'Gagal merender ulang'}`);
+        setTimeout(() => setCardError(''), 5000);
+        return;
+      }
+
       const base64 = imgData.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
 
       if (base64) {
@@ -616,11 +623,26 @@ const App = () => {
       });
 
       const data = await response.json();
-      const detectedName = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "Produk Tidak Dikenali";
-      setProductName(detectedName);
+      
+      // JIKA BACKEND MENGIRIMKAN ERROR DARI GOOGLE GEMINI
+      if (data.error) {
+        console.error("Gemini API Error:", data.error);
+        setProductName(`Gagal: ${data.error.message || 'API Error'}`);
+        setAppError(`Gemini API Error: ${data.error.message || 'Cek konfigurasi Vercel Anda.'}`);
+        return;
+      }
+
+      const detectedName = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      
+      if (detectedName) {
+        setProductName(detectedName);
+      } else {
+        setProductName("Produk Tidak Dikenali");
+      }
     } catch (error) {
       console.error(error);
-      setProductName("Produk Umum");
+      setProductName("Error Koneksi");
+      setAppError("Tidak bisa menghubungi server Backend Anda. Pastikan Backend di Vercel aktif.");
     } finally {
       setIsDetecting(false);
     }
@@ -923,6 +945,11 @@ const App = () => {
         });
 
         const promptData = await promptRes.json();
+        
+        if (promptData.error) {
+          throw new Error(`API Error: ${promptData.error.message || 'Gagal generate teks'}`);
+        }
+
         const rawText = promptData.candidates[0].content.parts[0].text;
         const cleanedText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
         const resultObj = JSON.parse(cleanedText);
@@ -1159,6 +1186,12 @@ const App = () => {
               method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseModalities: ['IMAGE'] } })
             });
             const imgData = await imgRes.json();
+            
+            if (imgData.error) {
+              finalScenes.push({ id: i + 1, desc: scene.desc, prompt: scene.prompt, imageUrl: '' });
+              continue;
+            }
+
             const base64 = imgData.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
             finalScenes.push({ id: i + 1, desc: scene.desc, prompt: scene.prompt, imageUrl: base64 ? `data:image/png;base64,${base64}` : '' });
           } catch (imgErr) {
@@ -1170,7 +1203,7 @@ const App = () => {
         goToStep(5);
       } catch (err) {
         console.error(err);
-        setErrorMsg('Gagal menjaga konsistensi identitas. Silakan coba lagi.');
+        setErrorMsg(err.message || 'Gagal menjaga konsistensi identitas. Silakan coba lagi.');
         goToStep(4);
       } finally {
         setIsGenerating(false);
