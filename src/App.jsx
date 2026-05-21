@@ -41,7 +41,7 @@ const getFriendlyErrorMessage = (errorStr) => {
 const getStyleDirective = (style) => {
   switch (style) {
     case 'POV HAND REVIEW':
-      return "Gaya POV (Point of View) FIRST PERSON POV LOCK AKTIF: Sudut pandang orang pertama mutlak. Kamera bertindak sebagai mata pengguna. Tangan WAJIB terlihat memegang produk di depan lensa (foreground dominan). DILARANG KERAS menggunakan third-person shot, kamera eksternal, atau shot tanpa tangan.";
+      return "Gaya POV (Point of View) FIRST PERSON POV LOCK AKTIF: Sudut pandang orang pertama mutlak. Kamera bertindak as mata pengguna. Tangan WAJIB terlihat memegang produk di depan lensa (foreground dominan). DILARANG KERAS menggunakan third-person shot, kamera eksternal, atau shot tanpa tangan.";
     case 'COMMERCIAL':
       return "Gaya Commercial Studio (COMMERCIAL FOCUS LOCK AKTIF): Orientasi penjualan (high clarity & product-centric). Produk WAJIB menjadi fokus utama (center atau rule of thirds), tidak tertutup elemen lain. Framing stabil dan informatif (close-up untuk detail, medium shot penggunaan). Lighting terang, clean, dan merata. Background sederhana, rapi, dan tidak distraktif. DILARANG KERAS menggunakan handheld berlebihan, gaya cinematic artistik, atau shadow gelap.";
     case 'CINEMATIC LOOK':
@@ -157,7 +157,7 @@ const SceneCard = ({ scene, globalIdentity, config, handleDownloadImage, uploade
   };
  
   const getLockedMirror = () => {
-    if (!globalIdentity?.mirrorDetails || globalIdentity.mirrorDetails.frameAndStyle === 'T/A') return "";
+    if (!globalIdentity?.mirrorDetails || globalIdentity.mirrorDetails.frameAndStyle !== 'T/A') return "";
     return `[MIRROR SCENE LOCK] Atribut Cermin: ${globalIdentity.mirrorDetails.frameAndStyle}. Refleksi, posisi cermin, dan isi background dalam pantulan WAJIB mengacu sepenuhnya pada Environment Anchor tanpa perubahan.`;
   };
  
@@ -231,7 +231,7 @@ const SceneCard = ({ scene, globalIdentity, config, handleDownloadImage, uploade
     }
  
     if (config.style === 'POV HAND REVIEW') {
-      prompt += `[MANDATORY POV HANDHELD LOCK RULE]\nFirst Person POV Lock AKTIF (firstPersonPOV = true, handsVisible = true, disableExternalCamera = true). Kamera WAJIB berposisi as mata pengguna. Tangan HARUS selalu terlihat memegang produk secara dominan di depan lensa (foreground product focus). Framing close-up hingga medium close-up dengan slight tilt dan natural micro movement. DILARANG KERAS menggunakan third-person shot, tripod feel, atau frame tanpa tangan. Wajib sertakan instruksi eksplisit: "first person POV, hands holding product, close to camera, foreground product focus, natural hand movement, user perspective". Pastikan produk tidak blur dan tidak tertutup tangan secara berlebihan.\n\n`;
+      prompt += `[MANDATORY POV HANDHELD LOCK RULE]\nFirst Person POV Lock AKTIF (firstPersonPOV = true, handsVisible = true, disableExternalCamera = true). Kamera WAJIB berposisi sebagai mata pengguna. Tangan HARUS selalu terlihat memegang produk secara dominan di depan lensa (foreground product focus). Framing close-up hingga medium close-up dengan slight tilt dan natural micro movement. DILARANG KERAS menggunakan third-person shot, tripod feel, atau frame tanpa tangan. Wajib sertakan instruksi eksplisit: "first person POV, hands holding product, close to camera, foreground product focus, natural hand movement, user perspective". Pastikan produk tidak blur dan tidak tertutup tangan secara berlebihan.\n\n`;
     }
     
     if (config.environment === 'Teras Rumah Tropis Minimalis (Gaya Perumahan Mewah)') {
@@ -273,7 +273,7 @@ const SceneCard = ({ scene, globalIdentity, config, handleDownloadImage, uploade
     setCardError('');
     
     try {
-      // PERBAIKAN: Menggunakan model 'gemini-2.5-flash-image-preview' yang mendukung output gambar (IMAGE modality)
+      // PENGGUNAAN MODEL KHUSUS GAMBAR: gemini-2.5-flash-image-preview
       const imageUrlEndpoint = `${BACKEND_URL}?model=gemini-2.5-flash-image-preview`;
       const activeStyleDirective = getStyleDirective(config.style);
       
@@ -413,7 +413,7 @@ const SceneCard = ({ scene, globalIdentity, config, handleDownloadImage, uploade
  
       const payload = {
         contents: [{ parts }],
-        generationConfig: { responseModalities: ['IMAGE'] }
+        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
       };
  
       const imgRes = await fetchWithRetry(imageUrlEndpoint, {
@@ -685,7 +685,7 @@ const App = () => {
           'Dapur Estetik (Modern & Bersih)': 'Berada di dapur modern yang bersih. Tonjolkan meja dapur, peralatan dapur, dan pencahayaan dalam ruangan yang hangat.',
           'Di Dalam Mobil (Vibes Perjalanan Tol Jakarta)': 'Berada di dalam mobil (city car atau mewah). SANGAT PENTING: Framing sempit, subjek sedang duduk, memakai sabuk pengaman, jendela menunjukkan motion blur dari jalan tol kota.',
           'Pedestrian Walkway (Suasana Sudirman CFD)': 'Jalur pejalan kaki (jalan raya lebar tanpa kendaraan bermotor) di pagi hari saat Car Free Day. Latar belakang gedung perkantoran tinggi modern khas Sudirman Jakarta. Terdapat aktivitas pejalan kaki, pelari, atau pesepeda yang memudar (blur) di latar belakang. Pencahayaan natural pagi hari (morning natural light). Ambience ramai, aktif, namun tertib dan bersih.',
-          'Teras Rumah Tropis Minimalis (Gaya Perumahan Mewah)': 'Teras rumah outdoor minimalis premium. Lantai batu alam/kayu outdoor, dinding putih/earth tone bersih. Terdapat tanaman tropis hijau (palem/monstera) dan furniture outdoor (kursi santai estetik/meja kecil). Pencahayaan natural daylight hangat, soft shadow. Ambience clean, mewah, dan tidak ramai.',
+          'Teras Rumah Tropis Minimalis (Gaya Perumahan Mewah)': 'Teras rumah outdoor minimalis premium. Lantai batu alam/kayu outdoor, dinding putih/earth tone bersih. Terdapat tanaman tropis hijau (palem/monstera) and furniture outdoor (kursi santai estetik/meja kecil). Pencahayaan natural daylight hangat, soft shadow. Ambience clean, mewah, dan tidak ramai.',
           'Fitting Room Mall (Pencahayaan Terang & Bersih)': 'Di dalam kamar pas (fitting room) mal. Pencahayaan dari atas yang terang dan bersih, cermin terlihat, refleksi halus, ruang tertutup.',
           'Mirror Selfie di Kamar (Cermin Besar)': 'Berada di kamar tidur pribadi minimalis. Menggunakan cermin besar (full body mirror). Karakteristik visual: Perspektif dari pantulan cermin (reflection view), model memegang smartphone menghadap cermin, interior kamar rapi terlihat di pantulan, cahaya jendela alami atau lampu warm indoor.',
           'Tabletop Lifestyle (Meja Kayu/Marble dengan Props Ringan)': 'Fokus pada permukaan meja (tabletop) kayu atau marble. Properti ringan estetik di latar belakang (seperti vas, buku, atau cangkir). Pencahayaan natural lembut dari jendela. Konteks aktivitas: unboxing, review detail produk di atas meja.',
@@ -693,7 +693,7 @@ const App = () => {
           'Meja Kerja / Home Office (Produktif)': 'Di area meja kerja atau home office minimalis. Terdapat laptop, buku, dan alat tulis. Pencahayaan fokus (task lighting/jendela). Nuansa produktif dan profesional.',
           'Kamar Mandi / Vanity Area (Beauty/Skincare)': 'Di area vanity atau wastafel kamar mandi yang bersih dan estetik. Pencahayaan terang merata khas cermin beauty/ring light. Terdapat pantulan cermin dan tekstur keramik/marmer. Cocok untuk skincare routine.',
           'Cafe Aesthetic (Indoor/Outdoor Ambient)': 'Di sebuah kafe estetik kekinian. Elemen interior kayu, tanaman, jendela besar. Pencahayaan hangat natural, latar belakang memudar (bokeh blur) dengan nuansa keramaian santai.',
-          'Taman Kota / Urban Park (Outdoor)': 'Di luar ruangan, taman kota yang asri. Tanaman hijau subur, sinar matahari alami terang, bayangan daun (dappled light), suasana segar, aktif dan terbuka.',
+          'Taman Kota / Urban Park (Outdoor)': 'Di luar ruangan, taman kota yang asri. Tanaman hijau subur, Sinar matahari alami terang, bayangan daun (dappled light), suasana segar, aktif dan terbuka.',
           'Area Gym / Fitness Space (Aktif)': 'Di dalam pusat kebugaran (gym) modern. Terdapat peralatan fitness blur di latar belakang. Pencahayaan kontras (neon atau spotlight). Suasana energik, aktif, sweat vibe.',
           'Studio Dramatic (Dark / Moody Lighting)': 'Di studio dengan set latar belakang gelap/hitam. Pencahayaan kontras tinggi (low-key lighting, rim light), bayangan tajam, dan mood yang misterius serta sangat intens.',
           'Luxury Interior (Sofa, Kaca, High-End)': 'Di dalam ruangan interior super mewah (lobi hotel atau ruang tamu elit). Sofa premium, elemen kaca, logam, dan marmer. Pencahayaan chandelier atau warm ambient. Kesan eksklusif dan mahal.',
@@ -786,7 +786,7 @@ const App = () => {
         - Camera Behavior: 'handheld_arm_length' dengan parameter selfRecording = true, forcePOV = true, disableExternalCamera = true. Kamera sebagai perpanjangan tangan model. Wajib terlihat sebagian tangan memegang kamera. Framing close-up/medium shot, sedikit tilt/micro-shake natural. DILARANG third-person shot, tripod, atau framing cinematic rapi. Wajib menginjeksi prompt visual eksplisit: "self recording, holding camera, handheld POV, arm length perspective, vlog style, natural framing, slight handheld feel".
         - Tone Komunikasi: 'casual_conversational'. Voice over santai (clean script), seperti berbicara ke teman.
         - Environment Flex: 'controlled'. Lokasi TERKUNCI di satu tempat.
-        - Vlog Consistency Lock: Semua scene harus mempertahankan perspektif self-recording POV yang sama tanpa berpindah to sudut orang ketiga.
+        - Vlog Consistency Lock: Semua scene harus mempertahankan perspektif self-recording POV yang sama tanpa berpindah ke sudut orang ketiga.
         - Background Motion: Wajib 'subtle' (internal logic berdasarkan environment).
         - Validasi Internal: Deteksi jika framing terlalu jauh atau tanpa indikasi handheld, otomatis koreksi ke POV vlog selfie.`;
            }
@@ -1179,7 +1179,7 @@ const App = () => {
  
           try {
             const imgRes = await fetchWithRetry(imageUrlEndpoint, {
-              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseModalities: ['IMAGE'] } })
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } })
             });
             const imgData = await imgRes.json();
 
@@ -1405,7 +1405,7 @@ const App = () => {
                   <p className="text-slate-400 text-xs leading-relaxed">Fokus pada penceritaan emosional (Hook, Conflict, Resolution) dengan model sebagai karakter utama tanpa upload produk.</p>
                 </div>
  
-                <div onClick={() => setSelectedMode('product-only')} className={`cursor-pointer rounded-2xl p-8 border-2 transition-all ${selectedMode === 'product-only' ? 'bg-slate-800 border-yellow-400 shadow-lg' : 'bg-slate-800/40 border-slate-700 hover:border-slate-500'}`}>
+                <div onClick={() => setSelectedMode('product-only')} className={`cursor-pointer rounded-2xl p-8 border-2 transition-all ${selectedMode === 'product-only' ? 'bg-slate-800 border-yellow-400 shadow-lg' : 'bg-[#0f172a] border-slate-700 hover:border-slate-500'}`}>
                   <div className="flex gap-2 mb-4"><ImageIcon className="text-yellow-400 mb-4"/></div>
                   <h3 className="text-xl font-bold text-white mb-2">Produk Saja</h3>
                   <p className="text-slate-400 text-xs leading-relaxed">Fokus pada estetika dan komposisi sinematik produk untuk showcase visual tanpa kehadiran model.</p>
@@ -1493,7 +1493,7 @@ const App = () => {
                     </div>
                     
                     <div onClick={() => handleProceedToConfig('CINEMATIC LOOK')} className="cursor-pointer bg-slate-800/40 border border-slate-700 rounded-2xl p-6 hover:border-yellow-400 hover:bg-slate-800 transition-all flex flex-col items-center text-center group">
-                      <div className="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><Clapperboard className="text-yellow-400" /></div>
+                      <div className="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-5 border border-slate-700 hover:border-yellow-400 hover:bg-slate-800 transition-all flex flex-col items-center text-center group"><Clapperboard className="text-yellow-400" /></div>
                       <h3 className="text-xl font-bold text-white mb-2">Cinematic Look</h3>
                       <p className="text-slate-400 text-sm">Estetika film dramatis dengan kedalaman ruang (depth of field) dan pencahayaan artistik.</p>
                     </div>
@@ -1551,7 +1551,7 @@ const App = () => {
                       )}
                     </select>
                     {config.style === 'POV HAND REVIEW' && <p className="text-[10px] text-yellow-400 mt-1">Dikunci ke Product Focus untuk gaya POV.</p>}
-                    {selectedMode === 'model-only' && <p className="text-[10px] text-yellow-400 mt-1">Dikunci secara otomatis untuk menyempurnukan workflow alur penceritaan (storytelling).</p>}
+                    {selectedMode === 'model-only' && <p className="text-[10px] text-yellow-400 mt-1">Dikunci secara otomatis untuk menyempurnakan workflow alur penceritaan (storytelling).</p>}
                   </div>
                 )}
               
