@@ -86,7 +86,7 @@ const getBackgroundMotionDirective = (env, mode, style) => {
     baseMotion = "Lingkungan indoor cenderung statis tanpa aktivitas manusia tambahan di background. Hanya ada sedikit efek atmosferik atau pencahayaan natural.";
   }
  
-  return `[ENVIRONMENT-BASED MOTION BEHAVIOR] Auto-Motion Preset AKTIF. Perilaku Spesifik Background: ${baseMotion} ATURAN KETAT: Seluruh pergerakan latar WAJIB bersifat subtle (sangat halus), berada HANYA di layer belakang (secondary layer) menggunakan shallow depth of field (sedikit blur). Tidak boleh mencuri fokus dari subjek/produk utama. Validasi: Natural background activity, consistent environment, not distracting, background movement only. Kepadatan aktivitas and mood background WAJIB konsisten di seluruh scene (tidak boleh tiba-tiba sepi lalu ramai).`;
+  return `[ENVIRONMENT-BASED MOTION BEHAVIOR] Auto-Motion Preset AKTIF. Perilaku Spesifik Background: ${baseMotion} ATURAN KETAT: Seluruh pergerakan latar WAJIB bersifat subtle (sangat halus), berada HANYA di layer belakang (secondary layer) menggunakan shallow depth of field (sedikit blur). Tidak boleh mencuri fokus dari subjek/produk utama. Validasi: Natural background activity, consistent environment, not distracting, background movement only. Kepadatan aktivitas dan mood background WAJIB konsisten di seluruh scene (tidak boleh tiba-tiba sepi lalu ramai).`;
 };
 
 const CustomAlert = ({ message, type = 'error', onClose }) => {
@@ -660,7 +660,7 @@ const App = () => {
           * Commercial Studio: Jelas, profesional, to the point, sangat fokus pada spesifikasi, fitur & benefit.
           * Cinematic Look: Emosional, dramatis, menggugah perasaan (mood-driven) namun bermuara kuat pada value produk.
           * POV Hand Review: Deskriptif, demonstratif, fokus memandu penonton melihat interaksi, tekstur, dan sensasi pemakaian produk.
-        - DILARANG membuat output yang terlalu storytelling abstrak tanpa jualan. Pain point target audience dan keunggulan produk WAJIB ditekankan di dalam naskah secara rapi.`;
+        - DILARANG membuat output yang terlalu storytelling abstrak tanpa arah jualan. Pain point target audience dan keunggulan produk WAJIB ditekankan di dalam naskah secara rapi.`;
         }
  
         const cleanVoiceOverRule = `
@@ -1198,7 +1198,7 @@ const App = () => {
                     </div>
                     
                     <div onClick={() => handleProceedToConfig('CINEMATIC LOOK')} className="cursor-pointer bg-slate-800/40 border border-slate-700 rounded-2xl p-6 hover:border-yellow-400 hover:bg-slate-800 transition-all flex flex-col items-center text-center group">
-                      <div className="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-5 border border-slate-700 hover:border-yellow-400 hover:bg-slate-800 transition-all  flex-col text-center group"><Clapperboard className="text-yellow-400" /></div>
+                      <div className="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-5 border border-slate-700 hover:border-yellow-400 hover:bg-slate-800 transition-all flex flex-col items-center text-center group"><Clapperboard className="text-yellow-400" /></div>
                       <h3 className="text-xl font-bold text-white mb-2">Cinematic Look</h3>
                       <p className="text-slate-400 text-sm">Estetika film dramatis dengan kedalaman ruang (depth of field) dan pencahayaan artistik.</p>
                     </div>
