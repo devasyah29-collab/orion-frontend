@@ -1198,7 +1198,7 @@ const App = () => {
                     </div>
                     
                     <div onClick={() => handleProceedToConfig('CINEMATIC LOOK')} className="cursor-pointer bg-slate-800/40 border border-slate-700 rounded-2xl p-6 hover:border-yellow-400 hover:bg-slate-800 transition-all flex flex-col items-center text-center group">
-                      <div className="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-5 border border-slate-700 hover:border-yellow-400 hover:bg-slate-800 transition-all flex flex-col items-center text-center group"><Clapperboard className="text-yellow-400" /></div>
+                      <div className="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-5 border border-slate-700 hover:border-yellow-400 hover:bg-slate-800 transition-all flex-col text-center group"><Clapperboard className="text-yellow-400" /></div>
                       <h3 className="text-xl font-bold text-white mb-2">Cinematic Look</h3>
                       <p className="text-slate-400 text-sm">Estetika film dramatis dengan kedalaman ruang (depth of field) dan pencahayaan artistik.</p>
                     </div>
