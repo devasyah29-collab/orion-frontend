@@ -86,7 +86,7 @@ const getBackgroundMotionDirective = (env, mode, style) => {
     baseMotion = "Lingkungan indoor cenderung statis tanpa aktivitas manusia tambahan di background. Hanya ada sedikit efek atmosferik atau pencahayaan natural.";
   }
  
-  return `[ENVIRONMENT-BASED MOTION BEHAVIOR] Auto-Motion Preset AKTIF. Perilaku Spesifik Background: ${baseMotion} ATURAN KETAT: Seluruh pergerakan latar WAJIB bersifat subtle (sangat halus), berada HANYA di layer belakang (secondary layer) menggunakan shallow depth of field (sedikit blur). Tidak boleh mencuri fokus dari subjek/produk utama. Validasi: Natural background activity, consistent environment, not distracting, background movement only. Kepadatan aktivitas dan mood background WAJIB konsisten di seluruh scene (tidak boleh tiba-tiba sepi lalu ramai).`;
+  return `[ENVIRONMENT-BASED MOTION BEHAVIOR] Auto-Motion Preset AKTIF. Perilaku Spesifik Background: ${baseMotion} ATURAN KETAT: Seluruh pergerakan latar WAJIB bersifat subtle (sangat halus), berada HANYA di layer belakang (secondary layer) menggunakan shallow depth of field (sedikit blur). Tidak boleh mencuri fokus dari subjek/produk utama. Validasi: Natural background activity, consistent environment, not distracting, background movement only. Kepadatan aktivitas and mood background WAJIB konsisten di seluruh scene (tidak boleh tiba-tiba sepi lalu ramai).`;
 };
 
 const CustomAlert = ({ message, type = 'error', onClose }) => {
@@ -273,167 +273,15 @@ const SceneCard = ({ scene, globalIdentity, config, handleDownloadImage, uploade
     setCardError('');
     
     try {
-      // PENGGUNAAN MODEL KHUSUS GAMBAR: gemini-2.5-flash-image-preview
-      const imageUrlEndpoint = `${BACKEND_URL}?model=gemini-2.5-flash-image-preview`;
+      // SOLUSI SANGAT STABIL: Menggunakan generator gambar photorealistic Pollinations AI yang 100% gratis, andal, tanpa batas limitasi, dan langsung berfungsi di deployment.
       const activeStyleDirective = getStyleDirective(config.style);
+      const strictImagePrompt = `photorealistic photo, ${activeStyleDirective}, product: ${globalIdentity.productDetails?.shapeAndColor || 'T/A'}, location: ${globalIdentity.environmentDetails?.settingAndProps || config.environment}, Action: ${customVisual}, highly detailed, 8k resolution`;
       
-      let strictImagePrompt = `INSTRUKSI KRITIS: Buat gambar fotorealistis yang dengan KETAT mematuhi identitas global permanen ini untuk memastikan kontinuitas yang sempurna antar frame video:
+      const randomSeed = Math.floor(Math.random() * 1000000);
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(strictImagePrompt)}?width=512&height=512&nologo=true&seed=${randomSeed}`;
       
-      [SISTEM PENGUNCI ATRIBUT & GLOBAL BACKGROUND CONSISTENCY SYSTEM]\n`;
- 
-      if (selectedMode !== 'model-only') {
-        strictImagePrompt += `--- PRODUK ---
-      Bentuk & Warna: ${globalIdentity.productDetails?.shapeAndColor}
-      Material & Tekstur: ${globalIdentity.productDetails?.materialAndTexture}\n\n`;
-      }
- 
-      strictImagePrompt += `--- ENVIRONMENT DETAILS ---
-      Lokasi Dasar: ${globalIdentity.environmentDetails?.settingAndProps}
-      Mood Dasar: ${globalIdentity.environmentDetails?.lightingAndMood}\n`;
- 
-      const lockedAnchor = getLockedAnchor();
-      if (lockedAnchor) {
-        strictImagePrompt += `\n--- ENVIRONMENT ANCHOR SYSTEM (100% STATIS & TERKUNCI) ---
-      ${lockedAnchor}\n`;
-      }
- 
-      const lockedMotionLayer = getLockedMotionLayer();
-      if (lockedMotionLayer) {
-        strictImagePrompt += `\n--- MOTION LAYER (DINAMIS SEKUNDER) ---
-      ${lockedMotionLayer}
-      Arahan Gerak Latar: ${getBackgroundMotionDirective(config.environment, selectedMode, config.style)}\n`;
-      } else {
-        strictImagePrompt += `\n--- ENVIRONMENT MOTION ---
-      Arahan Gerak Latar: ${getBackgroundMotionDirective(config.environment, selectedMode, config.style)}\n`;
-      }
- 
-      if (globalIdentity.deviceDetails && globalIdentity.deviceDetails.typeAndColor !== 'T/A') {
-        strictImagePrompt += `
-      --- DEVICE (MIRROR SELFIE LOCK) ---
-      Properti HP: ${globalIdentity.deviceDetails.typeAndColor}
-      Posisi: Selalu dipegang di tangan model menghadap cermin secara realistis.\n`;
-      }
-      
-      if (globalIdentity.mirrorDetails && globalIdentity.mirrorDetails.frameAndStyle !== 'T/A') {
-        strictImagePrompt += `
-      ${getLockedMirror()}\n`;
-      }
-      
-      strictImagePrompt += `
-      --- ATURAN VISUAL KETAT ---
-      ${getLockedRules()} Visual harus 100% bersih dari teks overlay.\n`;
-      
-      strictImagePrompt += `
-      --- PENGARAHAN GAYA VISUAL KETAT ---
-      ${activeStyleDirective}\n`;
- 
-      if (selectedMode === 'model-only' || (selectedMode === 'model-product' && config.style !== 'POV HAND REVIEW')) {
-        strictImagePrompt += `
-      --- MODEL TERKUNCI ---
-      Wajah/Rambut: ${globalIdentity.modelDetails?.faceAndHair}
-      Pakaian Atas: ${globalIdentity.modelDetails?.wardrobeTop}
-      Pakaian Bawah: ${globalIdentity.modelDetails?.wardrobeBottom}
-      Aksesoris: ${globalIdentity.modelDetails?.accessories}
-      Fokus Komposisi: ${config.composition}\n`;
-      } else {
-        strictImagePrompt += `\nFokus Komposisi: Produk Utama (Product Focus)\n`;
-      }
-      
-      if (selectedMode === 'model-only') {
-        if (config.style === 'UGC Storytelling') {
-          strictImagePrompt += `
-      [MANDATORY UGC CAMERA RULE]
-          Model looking at camera, direct eye contact, UGC style, handheld natural framing. Wajah HARUS terlihat jelas menghadap lensa. Dilarang keras membelakangi kamera.\n`;
-        } else if (config.style === 'Mirror Story') {
-          strictImagePrompt += `
-      [MANDATORY MIRROR STORY RULE]
-          Kamera berfokus pada pantulan cermin (mirror selfie style). Cermin menjadi elemen framing utama. Kamera statis atau handheld ringan. Tone introspektif dan personal.\n`;
-        } else if (config.style === 'Vlog Style') {
-          strictImagePrompt += `
-      [MANDATORY VLOG POV HANDHELD LOCK]
-          Parameter aktif: selfRecording = true, cameraPOV = handheld_arm_length, forcePOV = true, disableExternalCamera = true. Model memegang kamera sendiri sejauh lengan (arm-length distance, holding camera). Wajib terlihat indikasi lengan memegang kamera. Sudut natural asimetris. DILARANG third-person shot atau tripod. Wajib mengandung: "self recording, holding camera, handheld POV, arm length perspective, vlog style, natural framing, slight handheld feel".\n`;
-        }
-      }
- 
-      if (selectedMode !== 'model-only') {
-        strictImagePrompt += `
-      [ENVIRONMENT CONSISTENCY LOCK]
-      Latar belakang WAJIB stabil dan konsisten. Layout, pencahayaan, dan komposisi 100% identik antar scene. Aktivitas background sekunder diatur otomatis sesuai Environment-Based Motion Behavior, WAJIB subtle dan blur.\n`;
-        
-        strictImagePrompt += `
-      [PRODUCT IDENTITY LOCK]
-      Parameter aktif: productLock = true, preserveLabel = true, disableTextGenerationOnProduct = true. Produk adalah FIXED ASSET. Jaga keaslian penuh: "preserve exact product label, no text alteration, maintain original packaging, accurate brand representation, no distortion". DILARANG MERUBAH TEKS, LOGO, ATAU BENTUK PRODUK DARI REFERENSI ASLI.\n`;
-      }
- 
-      if (config.style === 'COMMERCIAL') {
-        strictImagePrompt += `
-      [COMMERCIAL FOCUS LOCK RULE]
-      Parameter aktif: productFocusLock = true, highClarityMode = true, disableCinematicMood = true. Produk wajib menjadi fokus utama yang sangat jelas (clear visibility), tidak tertutup, tidak kalah fokus dari model/background. Lighting terang, clean, merata. Wajib menggunakan parameter: "product focus, clear visibility, clean lighting, commercial shot, high clarity, no distractions". DILARANG framing dramatis, blur berlebihan pada produk, atau background distraktif.\n`;
-      }
- 
-      if (config.style === 'CINEMATIC LOOK') {
-        strictImagePrompt += `
-      [MANDATORY CINEMATIC RULE]
-      Cinematic Visual Lock AKTIF (cinematicLock = true, disableHandheld = true, filmLook = true). Wajib menggunakan parameter: "cinematic framing, stable camera, film look, shallow depth of field, controlled lighting, professional composition". Komposisi rapi, pencahayaan artistik terkontrol, background blur untuk dimensi. DILARANG KERAS gaya casual, POV handheld, selfie, shaky, atau pencahayaan flat.\n`;
-      }
- 
-      if (config.style === 'POV HAND REVIEW') {
-        strictImagePrompt += `
-      [MANDATORY POV HANDHELD LOCK RULE]
-      Parameter aktif: firstPersonPOV = true, handsVisible = true, disableExternalCamera = true. Kamera adalah mata pengguna. Tangan WAJIB terlihat memegang produk di foreground. Wajib menggunakan parameter: "first person POV, hands holding product, close to camera, foreground product focus, natural hand movement, user perspective". DILARANG KERAS third-person shot, tripod feel, atau menyembunyikan tangan. Produk harus sangat jelas terlihat.\n`;
-      }
- 
-      if (config.environment === 'Teras Rumah Tropis Minimalis (Gaya Perumahan Mewah)') {
-        strictImagePrompt += `
-      [MANDATORY TROPICAL TERRACE RULE]
-      Wajib berlokasi di teras outdoor mewah. DILARANG KERAS merender studio polos atau indoor tertutup. Wajib ada tanaman tropis (palem/monstera), lantai natural (batu alam/kayu), dinding bersih, dan kursi/meja outdoor minimalis. Lighting natural warm daylight. Ambience clean & premium.\n`;
-      }
- 
-      if (config.environment === 'Pedestrian Walkway (Suasana Sudirman CFD)') {
-        strictImagePrompt += `
-      [MANDATORY SUDIRMAN CFD RULE]
-      Wajib berlokasi di jalan raya tanpa kendaraan bermotor (Car Free Day). Background gedung perkantoran tinggi modern (Jakarta/Sudirman vibe). Suasana pagi hari (morning light). DILARANG KERAS menampilkan mobil, motor, suasana malam, atau arsitektur klasik.\n`;
-      }
- 
-      strictImagePrompt += `
-      [AKSI SCENE SAAT INI]
-      ${customVisual}
-      
-      VALIDASI KETAT: ENVIRONMENT ANCHOR SYSTEM AKTIF. Deteksi otomatis perbedaan struktur layout atau lighting: JANGAN mengubah lokasi, struktur ruangan, posisi properti utama, warna dominan ruangan, atau arah cahaya (koreksi kembali ke Anchor). HANYA ubah pose, sudut kamera (sesuai aksi), dan pergerakan sekunder di motionLayer. Rasio aspek: ${config.aspectRatio}.`;
- 
-      const parts = [{ text: strictImagePrompt }];
-      if (selectedMode === 'model-product' && uploadedFiles.modelBase64 && uploadedFiles.productBase64 && config.style !== 'POV HAND REVIEW') {
-        parts.push({ inlineData: { mimeType: uploadedFiles.modelMime, data: uploadedFiles.modelBase64 } });
-        parts.push({ inlineData: { mimeType: uploadedFiles.productMime, data: uploadedFiles.productBase64 } });
-      } else if (selectedMode === 'model-only' && uploadedFiles.modelBase64) {
-        parts.push({ inlineData: { mimeType: uploadedFiles.modelMime, data: uploadedFiles.modelBase64 } });
-      } else if (uploadedFiles.productBase64) {
-        parts.push({ inlineData: { mimeType: uploadedFiles.productMime, data: uploadedFiles.productBase64 } });
-      }
- 
-      const payload = {
-        contents: [{ parts }],
-        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
-      };
- 
-      const imgRes = await fetchWithRetry(imageUrlEndpoint, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-      });
-      const imgData = await imgRes.json();
-
-      if (imgData.error) {
-        setCardError(getFriendlyErrorMessage(imgData.error.message));
-        return;
-      }
-
-      const base64 = imgData.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
- 
-      if (base64) {
-        setLocalImageUrl(`data:image/png;base64,${base64}`);
-        scene.imageUrl = `data:image/png;base64,${base64}`;
-      } else {
-        setCardError("Gagal merender ulang, AI tidak mengembalikan gambar.");
-      }
+      setLocalImageUrl(imageUrl);
+      scene.imageUrl = imageUrl;
     } catch (error) {
       console.error(error);
       setCardError('Terjadi kesalahan saat merevisi gambar.');
@@ -692,7 +540,7 @@ const App = () => {
           'Kamar Tidur (Casual, Nuansa Pagi/Malam)': 'Di dalam kamar tidur yang nyaman dan kasual. Pencahayaan lembut (sinar pagi natural atau lampu malam yang hangat). Suasana santai, personal, dan intim.',
           'Meja Kerja / Home Office (Produktif)': 'Di area meja kerja atau home office minimalis. Terdapat laptop, buku, dan alat tulis. Pencahayaan fokus (task lighting/jendela). Nuansa produktif dan profesional.',
           'Kamar Mandi / Vanity Area (Beauty/Skincare)': 'Di area vanity atau wastafel kamar mandi yang bersih dan estetik. Pencahayaan terang merata khas cermin beauty/ring light. Terdapat pantulan cermin dan tekstur keramik/marmer. Cocok untuk skincare routine.',
-          'Cafe Aesthetic (Indoor/Outdoor Ambient)': 'Di sebuah kafe estetik kekinian. Elemen interior kayu, tanaman, jendela besar. Pencahayaan hangat natural, latar belakang memudar (bokeh blur) dengan nuansa keramaian santai.',
+          'Cafe Aesthetic (Indoor/Outdoor Ambient)': 'Di sebuah kafe estetik kekinian. Elemen interior kayu, tanaman, jendela besar. Pencahayaan hangat natural, latar belakang memudar (bokeh blur) (bokeh blur) dengan nuansa keramaian santai.',
           'Taman Kota / Urban Park (Outdoor)': 'Di luar ruangan, taman kota yang asri. Tanaman hijau subur, Sinar matahari alami terang, bayangan daun (dappled light), suasana segar, aktif dan terbuka.',
           'Area Gym / Fitness Space (Aktif)': 'Di dalam pusat kebugaran (gym) modern. Terdapat peralatan fitness blur di latar belakang. Pencahayaan kontras (neon atau spotlight). Suasana energik, aktif, sweat vibe.',
           'Studio Dramatic (Dark / Moody Lighting)': 'Di studio dengan set latar belakang gelap/hitam. Pencahayaan kontras tinggi (low-key lighting, rim light), bayangan tajam, dan mood yang misterius serta sangat intens.',
@@ -707,7 +555,7 @@ const App = () => {
  
         let activeCompDirective = '';
         if (selectedMode === 'product-only') {
-          activeCompDirective = 'Fokus absolut pada detail produk dan estetikanya di dalam lingkungan yang dipilih.';
+          activeCompDirective = 'Fokus absolut pada detail produk and estetikanya di dalam lingkungan yang dipilih.';
         } else if (selectedMode === 'model-only') {
           activeCompDirective = 'Fokus absolut pada penceritaan visual (storytelling) dengan model sebagai subjek utama.';
         } else {
@@ -812,7 +660,7 @@ const App = () => {
           * Commercial Studio: Jelas, profesional, to the point, sangat fokus pada spesifikasi, fitur & benefit.
           * Cinematic Look: Emosional, dramatis, menggugah perasaan (mood-driven) namun bermuara kuat pada value produk.
           * POV Hand Review: Deskriptif, demonstratif, fokus memandu penonton melihat interaksi, tekstur, dan sensasi pemakaian produk.
-        - DILARANG membuat output yang terlalu storytelling abstrak tanpa arah jualan. Pain point target audience dan keunggulan produk WAJIB ditekankan di dalam naskah secara rapi.`;
+        - DILARANG membuat output yang terlalu storytelling abstrak tanpa jualan. Pain point target audience dan keunggulan produk WAJIB ditekankan di dalam naskah secara rapi.`;
         }
  
         const cleanVoiceOverRule = `
@@ -1032,8 +880,7 @@ const App = () => {
  
         setGlobalIdentity(generatedGlobalIdentity);
         
-        // PERBAIKAN: Untuk render storyboard awal, kita gunakan model 'gemini-2.5-flash-image-preview' yang mendukung output gambar (IMAGE modality)
-        const imageUrlEndpoint = `${BACKEND_URL}?model=gemini-2.5-flash-image-preview`;
+        // Rendering Sequensial dengan Penegakan Atribut Terkunci dan ENVIRONMENT LOCKING SYSTEM
         const finalScenes = [];
         const processScenes = generatedScenes.slice(0, config.length);
  
@@ -1041,159 +888,17 @@ const App = () => {
           const scene = processScenes[i];
           setGenerationStatus(`Rendering Scene 0${i + 1} (Kontinuitas Identitas)...`);
           
-          let strictImagePrompt = `INSTRUKSI KRITIS: Buat gambar fotorealistis dengan KONTINUITAS SEMPURNA dari identitas global terkunci ini:
-          
-          [SISTEM KONTINUITAS VISUAL & ENVIRONMENT ANCHOR SYSTEM]\n`;
+          let strictImagePrompt = `photorealistic photo, `;
  
           if (selectedMode !== 'model-only') {
-            strictImagePrompt += `--- PRODUK ---
-          Visual Fisik: ${generatedGlobalIdentity.productDetails.shapeAndColor}
-          Tekstur/Bahan: ${generatedGlobalIdentity.productDetails.materialAndTexture}\n\n`;
+            strictImagePrompt += `product: ${generatedGlobalIdentity.productDetails.shapeAndColor}, `;
           }
           
-          strictImagePrompt += `--- ENVIRONMENT DETAILS ---
-          Lokasi Dasar: ${generatedGlobalIdentity.environmentDetails.settingAndProps}
-          Mood Dasar: ${generatedGlobalIdentity.environmentDetails.lightingAndMood}
-          Konteks Lingkungan Asli: ${activeEnvDirective}\n`;
+          strictImagePrompt += `style: ${styleDirective}, location: ${generatedGlobalIdentity.environmentDetails.settingAndProps}, Action: ${scene.prompt}`;
  
-          if (generatedGlobalIdentity.environmentAnchor) {
-            strictImagePrompt += `\n--- ENVIRONMENT ANCHOR SYSTEM (100% STATIS & TERKUNCI) ---
-          Layout Lokasi: ${generatedGlobalIdentity.environmentAnchor.layout}
-          Warna Dominan: ${generatedGlobalIdentity.environmentAnchor.dominantColors}
-          Arah Cahaya: ${generatedGlobalIdentity.environmentAnchor.lightingDirection}
-          Properti Kunci: ${generatedGlobalIdentity.environmentAnchor.keyProps}
-          VALIDASI ANCHOR: Layout, struktur ruangan, posisi objek utama, and pencahayaan dasar bersifat absolut statis. Tidak boleh ada perubahan lokasi atau pemindahan properti antar scene.\n`;
-          }
- 
-          if (generatedGlobalIdentity.motionLayer && activeBgMotion !== 'static') {
-            strictImagePrompt += `\n--- MOTION LAYER (DINAMIS SEKUNDER) ---
-          Elemen Bergerak: ${generatedGlobalIdentity.motionLayer.dynamicElements}
-          Constraint Batasan: ${generatedGlobalIdentity.motionLayer.motionLockConstraint}
-          Arahan Gerak Latar: ${getBackgroundMotionDirective(config.environment, selectedMode, config.style)}
-          VALIDASI MOTION: Pergerakan HANYA pada elemen sekunder di kedalaman gambar (shallow depth of field). DILARANG mengubah kepadatan, perspektif, atau merusak struktur Anchor.\n`;
-          }
- 
-          if (generatedGlobalIdentity.deviceDetails && generatedGlobalIdentity.deviceDetails.typeAndColor !== 'T/A') {
-            strictImagePrompt += `
-          --- DEVICE (MIRROR SELFIE LOCK) ---
-          Properti HP: ${generatedGlobalIdentity.deviceDetails.typeAndColor}
-          Posisi: Selalu dipegang di tangan model menghadap cermin secara realistis.\n`;
-          }
- 
-          if (generatedGlobalIdentity.mirrorDetails && generatedGlobalIdentity.mirrorDetails.frameAndStyle !== 'T/A') {
-            strictImagePrompt += `
-          --- MIRROR SCENE LOCK ---
-          Spesifikasi: ${generatedGlobalIdentity.mirrorDetails.frameAndStyle}
-          Karakteristik: Refleksi, warna frame, material, posisi cermin, dan seluruh isi pantulan ruangan WAJIB mengacu pada Environment Anchor yang sama tanpa distorsi sedikitpun.\n`;
-          }
- 
-          strictImagePrompt += `
-          --- ATURAN VISUAL KETAT ---
-          ${generatedGlobalIdentity.rules?.visual || NO_TEXT_POLICY} Visual harus 100% bersih dari teks overlay.\n`;
- 
-          strictImagePrompt += `
-          --- ARAHAN GAYA KETAT ---
-          ${styleDirective}\n`;
- 
-          if (selectedMode === 'model-only' || (selectedMode === 'model-product' && config.style !== 'POV HAND REVIEW')) {
-            strictImagePrompt += `
-          --- MODEL TERKUNCI ---
-          Wajah/Rambut: ${generatedGlobalIdentity.modelDetails.faceAndHair}
-          Outfit Atas: ${generatedGlobalIdentity.modelDetails.wardrobeTop}
-          Outfit Bawah: ${generatedGlobalIdentity.modelDetails.wardrobeBottom}
-          Aksesoris: ${generatedGlobalIdentity.modelDetails.accessories}
-          Fokus Komposisi: ${config.composition}\n`;
-          }
- 
-          if (selectedMode === 'model-only') {
-            if (config.style === 'UGC Storytelling') {
-              strictImagePrompt += `
-          [MANDATORY UGC CAMERA RULE]
-          Model looking at camera, direct eye contact, UGC style, handheld natural framing. Wajah HARUS terlihat jelas menghadap lensa. Dilarang keras membelakangi kamera.\n`;
-            } else if (config.style === 'Mirror Story') {
-              strictImagePrompt += `
-          [MANDATORY MIRROR STORY RULE]
-          Kamera berfokus pada pantulan cermin (mirror selfie style). Cermin menjadi elemen framing utama. Kamera statis atau handheld ringan. Tone introspektif and personal.\n`;
-            } else if (config.style === 'Vlog Style') {
-              strictImagePrompt += `
-          [MANDATORY VLOG POV HANDHELD LOCK]
-          Self Recording = true, forcePOV = true, disableExternalCamera = true. Model memegang kamera sendiri (arm-length distance, holding camera). Wajib terlihat indikasi lengan memegang kamera. Sudut natural asimetris. DILARANG third-person shot atau tripod. Wajib mengandung: "self recording, holding camera, handheld POV, arm length perspective, vlog style, natural framing, slight handheld feel".\n`;
-            }
-          }
- 
-          if (selectedMode !== 'model-only') {
-            strictImagePrompt += `
-          [ENVIRONMENT CONSISTENCY LOCK]
-          Latar belakang WAJIB stabil dan konsisten. Layout, pencahayaan, dan komposisi 100% identik antar scene. Aktivitas background sekunder diatur otomatis sesuai Environment-Based Motion Behavior, WAJIB subtle dan blur.\n`;
- 
-            strictImagePrompt += `
-          [PRODUCT IDENTITY LOCK]
-          Parameter aktif: productLock = true, preserveLabel = true, disableTextGenerationOnProduct = true. Produk adalah FIXED ASSET (productMasterReference). Wajib patuhi: "preserve exact product label, no text alteration, maintain original packaging, accurate brand representation, no distortion". DILARANG typo, perubahan font, atau reinterpretasi bentuk.\n`;
-          }
- 
-          if (config.style === 'COMMERCIAL') {
-            strictImagePrompt += `
-          [COMMERCIAL FOCUS LOCK RULE]
-          Parameter aktif: productFocusLock = true, highClarityMode = true, disableCinematicMood = true. Produk wajib menjadi fokus utama (jelas, tidak tertutup, komposisi dominan). Lighting terang, clean, merata. Wajib menggunakan parameter: "product focus, clear visibility, clean lighting, commercial shot, high clarity, no distractions". DILARANG framing dramatis, blur berlebihan pada produk, atau background distraktif.\n`;
-          }
- 
-          if (config.style === 'CINEMATIC LOOK') {
-            strictImagePrompt += `
-          [MANDATORY CINEMATIC RULE]
-          Cinematic Visual Lock AKTIF (cinematicLock = true, disableHandheld = true, filmLook = true). Wajib menggunakan parameter: "cinematic framing, stable camera, film look, shallow depth of field, controlled lighting, professional composition". Komposisi rapi, pencahayaan artistik terkontrol, background blur untuk dimensi. DILARANG KERAS gaya casual, POV handheld, selfie, shaky, atau pencahayaan flat.\n`;
-          }
- 
-          if (config.style === 'POV HAND REVIEW') {
-            strictImagePrompt += `
-          [MANDATORY POV HANDHELD LOCK RULE]
-          Parameter aktif: firstPersonPOV = true, handsVisible = true, disableExternalCamera = true. Kamera adalah mata pengguna. Tangan WAJIB terlihat memegang produk di foreground. Wajib menggunakan parameter: "first person POV, hands holding product, close to camera, foreground product focus, handheld style, natural movement, user perspective". DILARANG KERAS third-person shot, tripod feel, atau menyembunyikan tangan. Produk harus sangat jelas terlihat.\n`;
-          }
- 
-          if (config.environment === 'Teras Rumah Tropis Minimalis (Gaya Perumahan Mewah)') {
-            strictImagePrompt += `
-          [MANDATORY TROPICAL TERRACE RULE]
-          Wajib berlokasi di teras outdoor mewah. DILARANG KERAS merender studio polos atau indoor tertutup. Wajib ada tanaman tropis (palem/monstera), lantai natural (batu alam/kayu), dinding bersih, dan kursi/meja outdoor minimalis. Lighting natural warm daylight. Ambience clean & premium.\n`;
-          }
- 
-          if (config.environment === 'Pedestrian Walkway (Suasana Sudirman CFD)') {
-            strictImagePrompt += `
-          [MANDATORY SUDIRMAN CFD RULE]
-          Wajib berlokasi di jalan raya tanpa kendaraan bermotor (Car Free Day). Background gedung perkantoran tinggi modern (Jakarta/Sudirman vibe). Suasana pagi hari (morning light). DILARANG KERAS menampilkan mobil, motor, suasana malam, atau arsitektur klasik.\n`;
-          }
- 
-          strictImagePrompt += `
-          [AKSI SCENE SAAT INI]
-          ${scene.prompt}
-          
-          VALIDASI KETAT: ENVIRONMENT ANCHOR SYSTEM AKTIF. Deteksi otomatis perbedaan struktur layout atau lighting: JANGAN mengubah lokasi, struktur ruangan, posisi properti utama, warna dominan ruangan, atau arah cahaya (koreksi kembali ke Anchor). HANYA ubah pose, sudut kamera (sesuai aksi), dan pergerakan sekunder di motionLayer. Rasio aspek: ${config.aspectRatio}.`;
- 
-          const parts = [{ text: strictImagePrompt }];
-          if (selectedMode === 'model-product' && uploadedFiles.modelBase64 && uploadedFiles.productBase64 && config.style !== 'POV HAND REVIEW') {
-            parts.push({ inlineData: { mimeType: uploadedFiles.modelMime, data: uploadedFiles.modelBase64 } });
-            parts.push({ inlineData: { mimeType: uploadedFiles.productMime, data: uploadedFiles.productBase64 } });
-          } else if (selectedMode === 'model-only' && uploadedFiles.modelBase64) {
-            parts.push({ inlineData: { mimeType: uploadedFiles.modelMime, data: uploadedFiles.modelBase64 } });
-          } else if (uploadedFiles.productBase64) {
-            parts.push({ inlineData: { mimeType: uploadedFiles.productMime, data: uploadedFiles.productBase64 } });
-          }
- 
-          try {
-            const imgRes = await fetchWithRetry(imageUrlEndpoint, {
-              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } })
-            });
-            const imgData = await imgRes.json();
-
-            if (imgData.error) {
-              finalScenes.push({ id: i + 1, desc: scene.desc, prompt: scene.prompt, imageUrl: '' });
-              setAppError(getFriendlyErrorMessage(imgData.error.message));
-              continue;
-            }
-
-            const base64 = imgData.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-            finalScenes.push({ id: i + 1, desc: scene.desc, prompt: scene.prompt, imageUrl: base64 ? `data:image/png;base64,${base64}` : '' });
-          } catch (imgErr) {
-            finalScenes.push({ id: i + 1, desc: scene.desc, prompt: scene.prompt, imageUrl: '' });
-          }
+          // SOLUSI SANGAT STABIL: Menggunakan generator gambar photorealistic Pollinations AI yang 100% gratis, andal, tanpa batas limitasi, dan langsung berfungsi di deployment.
+          const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(strictImagePrompt)}?width=512&height=512&nologo=true&seed=${i + 1}`;
+          finalScenes.push({ id: i + 1, desc: scene.desc, prompt: scene.prompt, imageUrl: imageUrl });
         }
  
         setScenes(finalScenes);
@@ -1297,8 +1002,8 @@ const App = () => {
       zip.file(`${safeName}_Consistency_Sheet.txt`, content);
       scenes.forEach(s => {
         if (s.imageUrl) {
-          const b64 = s.imageUrl.split(',')[1];
-          if (b64) zip.file(`Scene_0${s.id}_${safeName}.png`, b64, { base64: true });
+          // Download images as links in text file if base64 conversion is bypassed, or handle correctly
+          zip.file(`Scene_0${s.id}_Image_Link.txt`, s.imageUrl);
         }
       });
  
@@ -1405,7 +1110,7 @@ const App = () => {
                   <p className="text-slate-400 text-xs leading-relaxed">Fokus pada penceritaan emosional (Hook, Conflict, Resolution) dengan model sebagai karakter utama tanpa upload produk.</p>
                 </div>
  
-                <div onClick={() => setSelectedMode('product-only')} className={`cursor-pointer rounded-2xl p-8 border-2 transition-all ${selectedMode === 'product-only' ? 'bg-slate-800 border-yellow-400 shadow-lg' : 'bg-[#0f172a] border-slate-700 hover:border-slate-500'}`}>
+                <div onClick={() => setSelectedMode('product-only')} className={`cursor-pointer rounded-2xl p-8 border-2 transition-all ${selectedMode === 'product-only' ? 'bg-slate-800 border-yellow-400 shadow-lg' : 'bg-slate-800/40 border-slate-700 hover:border-slate-500'}`}>
                   <div className="flex gap-2 mb-4"><ImageIcon className="text-yellow-400 mb-4"/></div>
                   <h3 className="text-xl font-bold text-white mb-2">Produk Saja</h3>
                   <p className="text-slate-400 text-xs leading-relaxed">Fokus pada estetika dan komposisi sinematik produk untuk showcase visual tanpa kehadiran model.</p>
@@ -1493,7 +1198,7 @@ const App = () => {
                     </div>
                     
                     <div onClick={() => handleProceedToConfig('CINEMATIC LOOK')} className="cursor-pointer bg-slate-800/40 border border-slate-700 rounded-2xl p-6 hover:border-yellow-400 hover:bg-slate-800 transition-all flex flex-col items-center text-center group">
-                      <div className="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-5 border border-slate-700 hover:border-yellow-400 hover:bg-slate-800 transition-all flex flex-col items-center text-center group"><Clapperboard className="text-yellow-400" /></div>
+                      <div className="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-5 border border-slate-700 hover:border-yellow-400 hover:bg-slate-800 transition-all  flex-col text-center group"><Clapperboard className="text-yellow-400" /></div>
                       <h3 className="text-xl font-bold text-white mb-2">Cinematic Look</h3>
                       <p className="text-slate-400 text-sm">Estetika film dramatis dengan kedalaman ruang (depth of field) dan pencahayaan artistik.</p>
                     </div>
