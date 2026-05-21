@@ -255,8 +255,9 @@ const SceneCard = ({ scene, globalIdentity, config, handleDownloadImage, uploade
   }, [customVisual, script, globalIdentity, config, selectedMode]);
  
   const copyPrompt = () => {
+    const text = videoPrompt;
     const textArea = document.createElement("textarea");
-    textArea.value = videoPrompt;
+    textArea.value = text;
     textArea.style.position = "fixed";
     textArea.style.left = "-9999px";
     document.body.appendChild(textArea);
@@ -272,8 +273,8 @@ const SceneCard = ({ scene, globalIdentity, config, handleDownloadImage, uploade
     setCardError('');
     
     try {
-      // PERBAIKAN: Dialihkan menggunakan backend dinamis Anda
-      const imageUrlEndpoint = `${BACKEND_URL}?model=gemini-2.5-flash`;
+      // PERBAIKAN: Menggunakan model 'gemini-2.5-flash-image-preview' yang mendukung output gambar (IMAGE modality)
+      const imageUrlEndpoint = `${BACKEND_URL}?model=gemini-2.5-flash-image-preview`;
       const activeStyleDirective = getStyleDirective(config.style);
       
       let strictImagePrompt = `INSTRUKSI KRITIS: Buat gambar fotorealistis yang dengan KETAT mematuhi identitas global permanen ini untuk memastikan kontinuitas yang sempurna antar frame video:
@@ -608,7 +609,7 @@ const App = () => {
     setProductName('');
     try {
       const base64Data = newUploads.productBase64;
-      // PERBAIKAN: Menggunakan backend Vercel secara otomatis dengan model stabil
+      // UNTUK DETEKSI TEKS: Menggunakan 'gemini-2.5-flash' (output TEXT modality diperbolehkan)
       const url = `${BACKEND_URL}?model=gemini-2.5-flash`;
  
       const response = await fetchWithRetry(url, {
@@ -676,7 +677,7 @@ const App = () => {
     setTimeout(async () => {
       try {
         setGenerationStatus('Analisis Motion Layer & Micro-Attributes...');
-        // PERBAIKAN: Menggunakan backend dinamis dengan model stabil
+        // UNTUK STRUKTUR STORYBOARD (TEKS): Menggunakan model 'gemini-2.5-flash' (output TEXT modality)
         const textUrl = `${BACKEND_URL}?model=gemini-2.5-flash`;
         
         const environmentDirectives = {
@@ -785,7 +786,7 @@ const App = () => {
         - Camera Behavior: 'handheld_arm_length' dengan parameter selfRecording = true, forcePOV = true, disableExternalCamera = true. Kamera sebagai perpanjangan tangan model. Wajib terlihat sebagian tangan memegang kamera. Framing close-up/medium shot, sedikit tilt/micro-shake natural. DILARANG third-person shot, tripod, atau framing cinematic rapi. Wajib menginjeksi prompt visual eksplisit: "self recording, holding camera, handheld POV, arm length perspective, vlog style, natural framing, slight handheld feel".
         - Tone Komunikasi: 'casual_conversational'. Voice over santai (clean script), seperti berbicara ke teman.
         - Environment Flex: 'controlled'. Lokasi TERKUNCI di satu tempat.
-        - Vlog Consistency Lock: Semua scene harus mempertahankan perspektif self-recording POV yang sama tanpa berpindah ke sudut orang ketiga.
+        - Vlog Consistency Lock: Semua scene harus mempertahankan perspektif self-recording POV yang sama tanpa berpindah to sudut orang ketiga.
         - Background Motion: Wajib 'subtle' (internal logic berdasarkan environment).
         - Validasi Internal: Deteksi jika framing terlalu jauh atau tanpa indikasi handheld, otomatis koreksi ke POV vlog selfie.`;
            }
@@ -1031,8 +1032,8 @@ const App = () => {
  
         setGlobalIdentity(generatedGlobalIdentity);
         
-        // Rendering Sequensial dengan Penegakan Atribut Terkunci dan ENVIRONMENT LOCKING SYSTEM
-        const imageUrlEndpoint = `${BACKEND_URL}?model=gemini-2.5-flash`;
+        // PERBAIKAN: Untuk render storyboard awal, kita gunakan model 'gemini-2.5-flash-image-preview' yang mendukung output gambar (IMAGE modality)
+        const imageUrlEndpoint = `${BACKEND_URL}?model=gemini-2.5-flash-image-preview`;
         const finalScenes = [];
         const processScenes = generatedScenes.slice(0, config.length);
  
@@ -1112,7 +1113,7 @@ const App = () => {
             } else if (config.style === 'Mirror Story') {
               strictImagePrompt += `
           [MANDATORY MIRROR STORY RULE]
-          Kamera berfokus pada pantulan cermin (mirror selfie style). Cermin menjadi elemen framing utama. Kamera statis atau handheld ringan. Tone introspektif dan personal.\n`;
+          Kamera berfokus pada pantulan cermin (mirror selfie style). Cermin menjadi elemen framing utama. Kamera statis atau handheld ringan. Tone introspektif and personal.\n`;
             } else if (config.style === 'Vlog Style') {
               strictImagePrompt += `
           [MANDATORY VLOG POV HANDHELD LOCK]
@@ -1550,7 +1551,7 @@ const App = () => {
                       )}
                     </select>
                     {config.style === 'POV HAND REVIEW' && <p className="text-[10px] text-yellow-400 mt-1">Dikunci ke Product Focus untuk gaya POV.</p>}
-                    {selectedMode === 'model-only' && <p className="text-[10px] text-yellow-400 mt-1">Dikunci secara otomatis untuk menyempurnakan workflow alur penceritaan (storytelling).</p>}
+                    {selectedMode === 'model-only' && <p className="text-[10px] text-yellow-400 mt-1">Dikunci secara otomatis untuk menyempurnukan workflow alur penceritaan (storytelling).</p>}
                   </div>
                 )}
               
