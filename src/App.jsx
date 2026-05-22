@@ -9,17 +9,29 @@ import {
 // URL Backend Vercel Anda yang sudah ter-deploy secara online
 const BACKEND_URL = "https://orion-backend-flame.vercel.app/api/gemini";
  
-// Helper utility dipindahkan ke luar agar bisa dipakai oleh SceneCard dan App
-const fetchWithRetry = async (url, options, retries = 5) => {
-  const delays = [1000, 2000, 4000, 8000, 16000];
-  for (let i = 0; i < retries; i++) {
+// Helper: Fetch dengan sistem retry (Maksimal 1x, dan tidak retry jika 429 Quota Exceeded)
+const fetchWithRetry = async (url, options, retries = 1) => {
+  for (let i = 0; i <= retries; i++) {
     try {
       const response = await fetch(url, options);
+      
+      // Jangan retry jika kuota habis (429)
+      if (response.status === 429) {
+        throw new Error("429: Quota Exceeded");
+      }
+      
       if (response.ok) return response;
-      if (i === retries - 1) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      // Jika status bukan OK dan jatah retry habis
+      if (i === retries) throw new Error(`HTTP error! status: ${response.status}`);
+      
     } catch (err) {
-      if (i === retries - 1) throw err;
-      await new Promise(r => setTimeout(r, delays[i]));
+      // Lempar error jika gagal karena kuota atau jika sudah mencapai batas retry
+      if (err.message.includes("429") || i === retries) {
+        throw err;
+      }
+      // Tunggu 2 detik sebelum retry
+      await new Promise(r => setTimeout(r, 2000));
     }
   }
 };
@@ -62,17 +74,21 @@ const compressImage = (file, maxWidth = 800, maxHeight = 800) => {
   });
 };
  
-// Menerjemahkan error teknis dari Google ke bahasa manusia yang ramah pemula
+// Menerjemahkan error teknis menjadi bahasa manusia yang ramah pemula
 const getFriendlyErrorMessage = (errorStr) => {
-  if (!errorStr) return "Terjadi kesalahan tidak dikenal.";
+  if (!errorStr) return "Terjadi kesalahan yang tidak diketahui. Coba lagi.";
   const lowerErr = errorStr.toLowerCase();
-  if (lowerErr.includes("high demand") || lowerErr.includes("limit") || lowerErr.includes("429") || lowerErr.includes("503") || lowerErr.includes("quota")) {
-    return "Waduh, server Google Gemini saat ini sedang sangat padat (High Demand) karena antrean pengguna global. Tenang, ini normal untuk API gratis! Harap tunggu 10-30 detik, lalu silakan coba klik tombol kembali. 🙏";
+  
+  if (lowerErr.includes("failed to fetch") || lowerErr.includes("network error") || lowerErr.includes("cors")) {
+    return "Gagal terhubung ke server. Pastikan backend Vercel Anda sudah online dan mengizinkan CORS dari domain ini.";
+  }
+  if (lowerErr.includes("high demand") || lowerErr.includes("429") || lowerErr.includes("quota exceeded")) {
+    return "Waduh, server Google Gemini saat ini sedang sangat padat (High Demand) / Limit Kuota tercapai. Harap tunggu sebentar lalu coba lagi. 🙏";
   }
   if (lowerErr.includes("api key") || lowerErr.includes("key not valid") || lowerErr.includes("invalid")) {
-    return "Kunci API (API Key) Gemini tidak sah. Silakan periksa kembali pengaturan GEMINI_API_KEY di dashboard environment variables Vercel Anda.";
+    return "Kunci API (API Key) Gemini Anda tidak sah. Periksa variabel GEMINI_API_KEY di backend Vercel Anda.";
   }
-  return errorStr;
+  return `Error: ${errorStr}`;
 };
 
 // Helper: Direktif Visual Style Ketat untuk memastikan AI patuh pada gaya yang dipilih
@@ -311,7 +327,6 @@ const SceneCard = ({ scene, globalIdentity, config, handleDownloadImage, uploade
     setCardError('');
     
     try {
-      // SOLUSI SANGAT STABIL: Menggunakan generator gambar photorealistic Pollinations AI yang 100% gratis, andal, tanpa batas limitasi, dan langsung berfungsi di deployment.
       const activeStyleDirective = getStyleDirective(config.style);
       const strictImagePrompt = `photorealistic photo, ${activeStyleDirective}, product: ${globalIdentity.productDetails?.shapeAndColor || 'T/A'}, location: ${globalIdentity.environmentDetails?.settingAndProps || config.environment}, Action: ${customVisual}, highly detailed, 8k resolution`;
       
@@ -495,10 +510,8 @@ const App = () => {
     setProductName('');
     try {
       const base64Data = newUploads.productBase64;
-      // UNTUK DETEKSI TEKS: Menggunakan 'gemini-2.5-flash' (output TEXT modality diperbolehkan)
-      const url = `${BACKEND_URL}?model=gemini-2.5-flash`;
- 
-      const response = await fetchWithRetry(url, {
+      
+      const response = await fetchWithRetry(BACKEND_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -526,6 +539,7 @@ const App = () => {
     } catch (error) {
       console.error(error);
       setProductName("Produk Umum");
+      setAppError(getFriendlyErrorMessage(error.message));
     } finally {
       setIsDetecting(false);
     }
@@ -540,7 +554,6 @@ const App = () => {
     setProductName("Menganalisis...");
     
     try {
-      // Kompresi gambar client-side terlebih dahulu sebelum dikirim ke backend
       const compressedBase64 = await compressImage(file);
       
       const newUploads = { 
@@ -564,6 +577,22 @@ const App = () => {
   };
  
   const handleGenerateContent = async () => {
+    // Validasi Anti Spam dan Perlindungan Upload
+    if (isGenerating) return;
+
+    if (selectedMode === 'model-product' && (!uploadedFiles.modelBase64 || !uploadedFiles.productBase64)) {
+      setErrorMsg('Mohon unggah gambar Model dan Produk terlebih dahulu.');
+      return;
+    }
+    if (selectedMode === 'model-only' && !uploadedFiles.modelBase64) {
+      setErrorMsg('Mohon unggah gambar Model terlebih dahulu.');
+      return;
+    }
+    if (selectedMode === 'product-only' && !uploadedFiles.productBase64) {
+      setErrorMsg('Mohon unggah gambar Produk terlebih dahulu.');
+      return;
+    }
+
     if (!productName) return;
  
     if (config.environment === 'Custom (Tulis Sendiri)' && !config.customEnvironment.trim()) {
@@ -580,8 +609,6 @@ const App = () => {
     setTimeout(async () => {
       try {
         setGenerationStatus('Analisis Motion Layer & Micro-Attributes...');
-        // UNTUK STRUKTUR STORYBOARD (TEKS): Menggunakan model 'gemini-2.5-flash' (output TEXT modality)
-        const textUrl = `${BACKEND_URL}?model=gemini-2.5-flash`;
         
         const environmentDirectives = {
           'Studio Foto Clean (Warna Earth Tone / Monokrom)': 'Studio foto profesional. Latar belakang mulus dan bersih (warna earth tone atau monokrom), pencahayaan studio yang terkontrol sempurna, minimalis.',
@@ -772,7 +799,7 @@ const App = () => {
           textParts.push({ inlineData: { mimeType: 'image/jpeg', data: uploadedFiles.productBase64 } });
         }
  
-        const promptRes = await fetchWithRetry(textUrl, {
+        const promptRes = await fetchWithRetry(BACKEND_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -960,7 +987,7 @@ const App = () => {
         goToStep(5);
       } catch (err) {
         console.error(err);
-        setErrorMsg(err.message || 'Gagal menjaga konsistensi identitas. Silakan coba lagi.');
+        setErrorMsg(getFriendlyErrorMessage(err.message));
         goToStep(4);
       } finally {
         setIsGenerating(false);
@@ -1165,7 +1192,7 @@ const App = () => {
                   <p className="text-slate-400 text-xs leading-relaxed">Fokus pada penceritaan emosional (Hook, Conflict, Resolution) dengan model sebagai karakter utama tanpa upload produk.</p>
                 </div>
  
-                <div onClick={() => setSelectedMode('product-only')} className={`cursor-pointer rounded-2xl p-8 border-2 transition-all ${selectedMode === 'product-only' ? 'bg-slate-800 border-yellow-400 shadow-lg' : 'bg-slate-800/40 border-slate-700 hover:border-slate-500'}`}>
+                <div onClick={() => setSelectedMode('product-only')} className={`cursor-pointer rounded-2xl p-8 border-2 transition-all ${selectedMode === 'product-only' ? 'bg-slate-800 border-yellow-400 shadow-lg' : 'bg-[#0f172a] border-slate-700 hover:border-slate-500'}`}>
                   <div className="flex gap-2 mb-4"><ImageIcon className="text-yellow-400 mb-4"/></div>
                   <h3 className="text-xl font-bold text-white mb-2">Produk Saja</h3>
                   <p className="text-slate-400 text-xs leading-relaxed">Fokus pada estetika dan komposisi sinematik produk untuk showcase visual tanpa kehadiran model.</p>
@@ -1253,7 +1280,7 @@ const App = () => {
                     </div>
                     
                     <div onClick={() => handleProceedToConfig('CINEMATIC LOOK')} className="cursor-pointer bg-slate-800/40 border border-slate-700 rounded-2xl p-6 hover:border-yellow-400 hover:bg-slate-800 transition-all flex flex-col items-center text-center group">
-                      <div className="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-5 border border-slate-700 hover:border-yellow-400 hover:bg-slate-800 transition-all flex-col text-center group"><Clapperboard className="text-yellow-400" /></div>
+                      <div className="w-14 h-14 bg-slate-900 rounded-full flex items-center justify-center mb-5 border border-slate-700 hover:border-yellow-400 hover:bg-slate-800 transition-all  flex-col text-center group"><Clapperboard className="text-yellow-400" /></div>
                       <h3 className="text-xl font-bold text-white mb-2">Cinematic Look</h3>
                       <p className="text-slate-400 text-sm">Estetika film dramatis dengan kedalaman ruang (depth of field) dan pencahayaan artistik.</p>
                     </div>
