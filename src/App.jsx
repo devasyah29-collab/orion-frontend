@@ -23,6 +23,44 @@ const fetchWithRetry = async (url, options, retries = 5) => {
     }
   }
 };
+
+// Fungsi Kompresi Gambar Kritis untuk mencegah Error 413 Vercel Payload Limit
+const compressImage = (file, maxWidth = 800, maxHeight = 800) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Mengubah gambar menjadi format jpeg terkompresi dengan kualitas 0.7
+        const base64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+        resolve(base64);
+      };
+    };
+  });
+};
  
 // Menerjemahkan error teknis dari Google ke bahasa manusia yang ramah pemula
 const getFriendlyErrorMessage = (errorStr) => {
@@ -468,7 +506,7 @@ const App = () => {
             role: "user",
             parts: [
               { text: "Berikan nama produk spesifik dari gambar ini dalam bahasa Indonesia (maksimal 5 kata). Hanya kembalikan nama produknya saja tanpa tanda kutip." },
-              { inlineData: { mimeType: file.type, data: base64Data } }
+              { inlineData: { mimeType: 'image/jpeg', data: base64Data } }
             ]
           }]
         })
@@ -498,14 +536,31 @@ const App = () => {
     if (!file) return;
  
     const imageUrl = URL.createObjectURL(file);
-    const base64Data = await fileToBase64(file);
+    setIsDetecting(true);
+    setProductName("Menganalisis...");
     
-    const newUploads = { 
-      ...uploadedFiles, [type]: imageUrl, [`${type}Base64`]: base64Data, [`${type}Mime`]: file.type
-    };
-    setUploadedFiles(newUploads);
-    
-    if (type === 'product' && selectedMode !== 'model-only') detectProductWithAI(file, newUploads);
+    try {
+      // Kompresi gambar client-side terlebih dahulu sebelum dikirim ke backend
+      const compressedBase64 = await compressImage(file);
+      
+      const newUploads = { 
+        ...uploadedFiles, 
+        [type]: imageUrl, 
+        [`${type}Base64`]: compressedBase64, 
+        [`${type}Mime`]: 'image/jpeg'
+      };
+      setUploadedFiles(newUploads);
+      
+      if (type === 'product' && selectedMode !== 'model-only') {
+        await detectProductWithAI(file, newUploads);
+      }
+    } catch (err) {
+      console.error("Proses pemrosesan gambar gagal:", err);
+      setProductName("Produk Umum");
+      setAppError("Gagal mengompresi gambar referensi.");
+    } finally {
+      setIsDetecting(false);
+    }
   };
  
   const handleGenerateContent = async () => {
@@ -540,7 +595,7 @@ const App = () => {
           'Kamar Tidur (Casual, Nuansa Pagi/Malam)': 'Di dalam kamar tidur yang nyaman dan kasual. Pencahayaan lembut (sinar pagi natural atau lampu malam yang hangat). Suasana santai, personal, dan intim.',
           'Meja Kerja / Home Office (Produktif)': 'Di area meja kerja atau home office minimalis. Terdapat laptop, buku, dan alat tulis. Pencahayaan fokus (task lighting/jendela). Nuansa produktif dan profesional.',
           'Kamar Mandi / Vanity Area (Beauty/Skincare)': 'Di area vanity atau wastafel kamar mandi yang bersih dan estetik. Pencahayaan terang merata khas cermin beauty/ring light. Terdapat pantulan cermin dan tekstur keramik/marmer. Cocok untuk skincare routine.',
-          'Cafe Aesthetic (Indoor/Outdoor Ambient)': 'Di sebuah kafe estetik kekinian. Elemen interior kayu, tanaman, jendela besar. Pencahayaan hangat natural, latar belakang memudar (bokeh blur) (bokeh blur) dengan nuansa keramaian santai.',
+          'Cafe Aesthetic (Indoor/Outdoor Ambient)': 'Di sebuah kafe estetik kekinian. Elemen interior kayu, tanaman, jendela besar. Pencahayaan hangat natural, latar belakang memudar (bokeh blur) dengan nuansa keramaian santai.',
           'Taman Kota / Urban Park (Outdoor)': 'Di luar ruangan, taman kota yang asri. Tanaman hijau subur, Sinar matahari alami terang, bayangan daun (dappled light), suasana segar, aktif dan terbuka.',
           'Area Gym / Fitness Space (Aktif)': 'Di dalam pusat kebugaran (gym) modern. Terdapat peralatan fitness blur di latar belakang. Pencahayaan kontras (neon atau spotlight). Suasana energik, aktif, sweat vibe.',
           'Studio Dramatic (Dark / Moody Lighting)': 'Di studio dengan set latar belakang gelap/hitam. Pencahayaan kontras tinggi (low-key lighting, rim light), bayangan tajam, dan mood yang misterius serta sangat intens.',
@@ -634,7 +689,7 @@ const App = () => {
         - Camera Behavior: 'handheld_arm_length' dengan parameter selfRecording = true, forcePOV = true, disableExternalCamera = true. Kamera sebagai perpanjangan tangan model. Wajib terlihat sebagian tangan memegang kamera. Framing close-up/medium shot, sedikit tilt/micro-shake natural. DILARANG third-person shot, tripod, atau framing cinematic rapi. Wajib menginjeksi prompt visual eksplisit: "self recording, holding camera, handheld POV, arm length perspective, vlog style, natural framing, slight handheld feel".
         - Tone Komunikasi: 'casual_conversational'. Voice over santai (clean script), seperti berbicara ke teman.
         - Environment Flex: 'controlled'. Lokasi TERKUNCI di satu tempat.
-        - Vlog Consistency Lock: Semua scene harus mempertahankan perspektif self-recording POV yang sama tanpa berpindah ke sudut orang ketiga.
+        - Vlog Consistency Lock: Semua scene harus mempertahankan perspektif self-recording POV yang sama tanpa berpindah to sudut orang ketiga.
         - Background Motion: Wajib 'subtle' (internal logic berdasarkan environment).
         - Validasi Internal: Deteksi jika framing terlalu jauh atau tanpa indikasi handheld, otomatis koreksi ke POV vlog selfie.`;
            }
@@ -645,7 +700,7 @@ const App = () => {
              workflowInstructions = `[MODEL + PRODUCT WORKFLOW] Interaksi harmonis antara subjek model dan produk.\n[ENVIRONMENT-BASED MOTION BEHAVIOR] Terapkan pergerakan background otomatis sesuai environment (subtle layer). Layout dan mood tetap terkunci.`;
            }
  
-           workflowInstructions += `\n[PRODUCT IDENTITY LOCK]: Parameter aktif (productLock = true, preserveLabel = true, disableTextGenerationOnProduct = true). Produk adalah FIXED ASSET. Jadikan scene 1 sebagai productMasterReference. Seluruh elemen visual produk (nama brand, teks kemasan, logo, warna, bentuk) WAJIB identik di seluruh scene. DILARANG reinterpretasi teks. Wajib injeksi: "preserve exact product label, no text alteration, maintain original packaging, accurate brand representation, no distortion".`;
+           workflowInstructions += `\n[PRODUCT IDENTITY LOCK]: Parameter aktif (productLock = true, preserveLabel = true, disableTextGenerationOnProduct = true). Produk adalah FIXED ASSET. Jadikan scene 1 sebagai productMasterReference. Seluruh elemen visual produk (nama brand, teks kemasan, logo, warna, bentuk) WAJIB identik di seluruh scene. DILARANG REINTERPRETASI TEKS. Wajib injeksi: "preserve exact product label, no text alteration, maintain original packaging, accurate brand representation, no distortion".`;
            
            if (config.style === 'COMMERCIAL') {
                workflowInstructions += `\n[COMMERCIAL FOCUS LOCK]: Parameter aktif (productFocusLock = true, highClarityMode = true, disableCinematicMood = true). Produk WAJIB menjadi fokus utama di setiap scene, tidak boleh tertutup, kalah fokus, atau terlalu kecil. Framing stabil (close-up/medium shot). Lighting terang, clean, merata. Background wajib sederhana, rapi, no distractions. Narasi wajib langsung menyorot fitur, manfaat, dan selling point (high-conversion). Wajib injeksi: "product focus, clear visibility, clean lighting, commercial shot, high clarity, no distractions".`;
@@ -709,12 +764,12 @@ const App = () => {
         const textParts = [{ text: directorPromptText }];
         
         if (selectedMode === 'model-product' && uploadedFiles.modelBase64 && uploadedFiles.productBase64) {
-          textParts.push({ inlineData: { mimeType: uploadedFiles.modelMime, data: uploadedFiles.modelBase64 } });
-          textParts.push({ inlineData: { mimeType: uploadedFiles.productMime, data: uploadedFiles.productBase64 } });
+          textParts.push({ inlineData: { mimeType: 'image/jpeg', data: uploadedFiles.modelBase64 } });
+          textParts.push({ inlineData: { mimeType: 'image/jpeg', data: uploadedFiles.productBase64 } });
         } else if (selectedMode === 'model-only' && uploadedFiles.modelBase64) {
-          textParts.push({ inlineData: { mimeType: uploadedFiles.modelMime, data: uploadedFiles.modelBase64 } });
+          textParts.push({ inlineData: { mimeType: 'image/jpeg', data: uploadedFiles.modelBase64 } });
         } else if (uploadedFiles.productBase64) {
-          textParts.push({ inlineData: { mimeType: uploadedFiles.productMime, data: uploadedFiles.productBase64 } });
+          textParts.push({ inlineData: { mimeType: 'image/jpeg', data: uploadedFiles.productBase64 } });
         }
  
         const promptRes = await fetchWithRetry(textUrl, {
